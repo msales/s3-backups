@@ -16,6 +16,7 @@ import logging
 import sys
 import re
 import os
+import math
 
 log = logging.getLogger('s3_backups')
 
@@ -66,9 +67,35 @@ def backup():
         return
 
     # upload file to Amazon S3
+    """
     k = Key(bucket)
     k.key = key_name + FILENAME
     k.set_contents_from_filename(t2.name)
+    t2.close()
+    """
+
+    filename_key = key_name + FILENAME
+    k = bucket.new_key(bucket)
+
+    mp = bucket.initiate_multipart_upload(filename_key)
+
+    source_size = os.stat(t2.name).st_size
+    bytes_per_chunk = 5000*1024*1024
+    chunks_count = int(math.ceil(source_size / float(bytes_per_chunk)))
+
+    for i in range(chunks_count):
+        offset = i * bytes_per_chunk
+        remaining_bytes = source_size - offset
+        file_bytes = min([bytes_per_chunk, remaining_bytes])
+        part_num = i + 1
+
+        print("uploading part " + str(part_num) + " of " + str(chunks_count))
+
+        with open(t2.name, 'r') as fp:
+            fp.seek(offset)
+            mp.upload_part_from_file(fp=fp, part_num=part_num, size=file_bytes)
+
+    mp.complete_upload()
     t2.close()
 
     log.info("Sucessfully uploaded the archive to Amazon S3")

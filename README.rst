@@ -16,7 +16,7 @@ Installation
 
 To install s3-backups::
 
-    $ sudo pip install s3-backups
+    $ sudo pip install git+git://github.com/msales/s3-backups.git
 
 Documentation
 -------------
